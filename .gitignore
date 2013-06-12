@@ -1,0 +1,10 @@
+*.dll
+*.pyc
+__pycache__
+*.exe
+*.png
+*.o
+t.py
+setup.py
+winuser.h
+test.c
