@@ -7,9 +7,9 @@ MODULES = mouse color
 .PHONY: all clean
 
 all: 
-	cd $(SRCDIR) && make
+	$(MAKE) -C $(SRCDIR)
 	-mv $(SRCDIR)/*.dll .
 
 clean:
 	-rm *.dll *.so *.o
-	cd $(SRCDIR) && make clean
+	$(MAKE) -C $(SRCDIR) clean
