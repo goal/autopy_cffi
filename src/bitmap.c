@@ -151,7 +151,7 @@ bool bitmap_save(MMBitmapRef bitmap, const char *path, const char *format)
 {
 	MMImageType type;
 
-	printf("start check!\n");
+	//printf("start check!\n");
 	if (!parseImageIOArgs(path, format, &type) || !bitmap_ready(bitmap)) {
 		return false;
 	}
@@ -230,14 +230,21 @@ int bitmap_count_of_color(MMBitmapRef bitmap, MMRGBHex color, float tolerance)
 MMPoint bitmap_find_bitmap(MMBitmapRef bitmap, MMBitmapRef sbitmap, float tolerance)
 {
 	MMPoint point = {-1, -1};
-	if (!bitmap_ready(bitmap) || !bitmap_ready(sbitmap)) return point;
+	printf("tolenrance=%f\n", tolerance);
+	if (!bitmap_ready(bitmap) || !bitmap_ready(sbitmap)) {
+		printf("bitmap is not ready yet!\n");
+		return point;
+	}
 
 	MMRect rect = MMBitmapGetBounds(bitmap);
+	printf("x=%d,y=%d,width=%d,height=%d\n", rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
 
-	if (findBitmapInRect(bitmap, sbitmap, &point,
+	if (findBitmapInRect(sbitmap, bitmap, &point,
 	                     rect, tolerance) == 0) {
 		return point;
 	}
+	
+	return point;
 }
 
 MMPoint *bitmap_find_every_bitmap(MMBitmapRef bitmap, MMBitmapRef sbitmap, float tolerance, MMPoint *list)
