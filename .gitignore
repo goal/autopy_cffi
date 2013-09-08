@@ -1,8 +1,10 @@
+.gitignore
 *.dll
 *.pyc
 __pycache__
 *.exe
 *.png
+*.bmp
 *.o
 t.py
 setup.py

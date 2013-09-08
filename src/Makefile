@@ -1,7 +1,7 @@
 #
 #
 
-CC = C:\MingW\bin\gcc.exe
+CC = C:\MingW\bin\gcc.exe -Wall -std=c99
 
 .PHONY: all mouse clean
 
