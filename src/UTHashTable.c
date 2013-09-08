@@ -1,4 +1,5 @@
 #include "UTHashTable.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
@@ -19,7 +20,10 @@ void initHashTable(UTHashTable *table, size_t initialCount, size_t nodeSize)
 	table->allocedNodeCount = (initialCount == 0) ? 1 : initialCount;
 	table->nodeCount = 0;
 	table->nodeSize = nodeSize;
-	table->nodes = calloc(table->nodeSize, nodeSize * table->allocedNodeCount);
+	table->nodes = calloc(table->allocedNodeCount, nodeSize);
+	if (table->nodes == NULL) {
+		fprintf(stderr, "calloc failed! plz check memory useage!\n");
+	}
 }
 
 void destroyHashTable(UTHashTable *table)
@@ -42,6 +46,8 @@ void *getNewNode(UTHashTable *table)
 {
 	/* Increment node count, resizing table if necessary. */
 	const size_t newNodeCount = ++(table->nodeCount);
+	//printf("flow before\n");
+
 	if (table->allocedNodeCount < newNodeCount) {
 		do {
 			/* Double size each time to avoid calls to realloc(). */
@@ -51,6 +57,12 @@ void *getNewNode(UTHashTable *table)
 		table->nodes = realloc(table->nodes, table->nodeSize *
 		                                     table->allocedNodeCount);
 	}
+	if (table->nodes == NULL) {
+		printf("realloc failed!\n");
+	}
+	//printf("newNodeCount=%d\n", newNodeCount);
+	//printf("nodesize=%d, allo..=%d, nodeCount=%d\n", table->nodeSize, table->allocedNodeCount, table->nodeCount);
+	//printf("flow after\n");
 
 	return (char *)table->nodes + (table->nodeSize * (table->nodeCount - 1));
 }
