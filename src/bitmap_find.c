@@ -1,6 +1,7 @@
 #include "bitmap_find.h"
 #include "UTHashTable.h"
 #include <assert.h>
+#include <stdio.h>
 
 /* Node to be used in hash table. */
 struct shiftNode {
@@ -79,6 +80,7 @@ static int findBitmapInRectAt(MMBitmapRef needle,
 	assert(badShiftTable != NULL);
 
 	/* Search |haystack|, while |needle| can still be within it. */
+	/* pointOffset init as pointzero */
 	while (pointOffset.y <= scanHeight) {
 		/* struct shiftNode *node = NULL;
 		MMRGBHex lastColor; */
@@ -158,6 +160,7 @@ int findBitmapInRect(MMBitmapRef needle,
 	ret = findBitmapInRectAt(needle, haystack, point, rect,
 	                         tolerance, MMPointZero, &badShiftTable);
 	destroyBadShiftTable(&badShiftTable);
+	printf("ret=%d\n", ret);
 	return ret;
 }
 
@@ -206,15 +209,20 @@ static void initBadShiftTable(UTHashTable *jumpTable, MMBitmapRef needle)
 	const MMPoint lastPoint = MMPointMake(needle->width - 1, needle->height - 1);
 	const size_t maxColors = needle->width * needle->height;
 	MMPoint scan;
+	
+	printf("lastpoint=%d,%d, maxColors=%d\n", lastPoint.x, lastPoint.y, maxColors);
 
 	/* Allocate max size initially to avoid a million calls to malloc(). */
 	initHashTable(jumpTable, maxColors, sizeof(struct shiftNode));
+	printf("init table finished!\n");
 
+	int i = 0;
 	/* Populate jumpTable with analysis of |needle|. */
 	for (scan.y = lastPoint.y; ; --scan.y) {
 		for (scan.x = lastPoint.x; ; --scan.x) {
 			MMRGBHex color = MMRGBHexAtPoint(needle, scan.x, scan.y);
 			if (!tableHasKey(jumpTable, color)) {
+				i++;
 				addNodeToTable(jumpTable, color,
 				               MMPointMake(needle->width - scan.x,
 				                           needle->height - scan.y));
@@ -224,6 +232,8 @@ static void initBadShiftTable(UTHashTable *jumpTable, MMBitmapRef needle)
 		}
 		if (scan.y == 0) break;
 	}
+	printf("i = %d\n", i);
+	//printf("init func finished!\n");
 }
 
 static int needleAtOffset(MMBitmapRef needle, MMBitmapRef haystack,
@@ -254,10 +264,17 @@ static void addNodeToTable(UTHashTable *table,
                            MMRGBHex hexColor,
                            MMPoint offset)
 {
-	struct shiftNode *node = getNewNode(table);
+	if (table->nodes == NULL) {
+		fprintf(stderr, "this is impossible");
+	}
+	struct shiftNode *node = (struct shiftNode *)getNewNode(table);
+	//printf("getnewNode finished!\n");
+	//printf("node->color=%d, offset=%d, %d\n", node->color, (node->offset).x, (node->offset).y);
 	node->color = hexColor;
 	node->offset = offset;
+	//printf("i suspect here, or here?!\n");
 	UTHASHTABLE_ADD_INT(table, color, node, struct shiftNode);
+	//printf("i suspect here!\n");
 }
 
 static struct shiftNode *nodeForColor(UTHashTable *table,
