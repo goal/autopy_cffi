@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-#encoding=utf-8
+# encoding=utf-8
 
+import os
 import sys
 from cffi import FFI
 import screen
@@ -71,108 +72,106 @@ ffi.cdef("""
 
 _bitmap = ffi.dlopen("bitmap.dll")
 
+
 class Bitmap():
-	def __init__(self, bmp_cdata):
-		self.enc = sys.getfilesystemencoding()
 
-		self.bmp_cdata = bmp_cdata
-		self.height = bmp_cdata.height
-		self.width = bmp_cdata.width
+    def __init__(self, bmp_ref):
+        self.enc = sys.getfilesystemencoding()
 
-		self.bmp_ptr = ffi.new("struct _MMBitmap *")
-		self.bmp_ptr.imageBuffer = self.bmp_cdata.imageBuffer
-		self.bmp_ptr.width = bmp_cdata.width
-		self.bmp_ptr.height = bmp_cdata.height
-		self.bmp_ptr.bytewidth = bmp_cdata.bytewidth
-		self.bmp_ptr.bitsPerPixel = bmp_cdata.bitsPerPixel
-		self.bmp_ptr.bytesPerPixel = bmp_cdata.bytesPerPixel
+        self.bmp_ref = bmp_ref
+        self.height = bmp_ref.height
+        self.width = bmp_ref.width
 
-		#self.buffer_ptr = ffi.gc(ffi.new("char*", ))
-		#self.bmp_ptr = ffi.addressof(self.bmp_cdata)
+    # def __del__(self):
+    #	_bitmap.bitmap_dealloc(self.bmp_ref)
 
-	#def __del__(self):
-	#	_bitmap.bitmap_dealloc(self.bmp_cdata)
+    def bitmap_ready(self):
+        return _bitmap.bitmap_ready(self.bmp_ref)
 
-	def bitmap_ready(self):
-		return _bitmap.bitmap_ready(self.bmp_ptr)
+    def save(self, filepath, format=ffi.NULL):
+        filepath = filepath.encode(self.enc)
+        format = format.encode(self.enc) if format != ffi.NULL else format
+        return _bitmap.bitmap_save(self.bmp_ref, filepath, format)
 
-	def save(self, filepath, format=ffi.NULL):
-		filepath = filepath.encode(self.enc)
-		format = format.encode(self.enc) if format != ffi.NULL else format 
-		return _bitmap.bitmap_save(self.bmp_ptr, filepath, format)
+    @classmethod
+    def open(self, _filepath, format=ffi.NULL):
+        enc = sys.getfilesystemencoding()
+        filepath = _filepath.encode(enc)
+        if not os.path.exists(filepath):
+            raise FileNotFoundError("%s not found!" % _filepath)
+        format = format.encode(enc) if format != ffi.NULL else format
+        bmp_ref = _bitmap.bitmap_open(filepath, format)
+        return Bitmap(bmp_ref)
 
-	@classmethod
-	def open(self, filepath, format=ffi.NULL):
-		filepath = filepath.encode(self.enc)
-		format = format.encode(self.enc) if format != ffi.NULL else format 
-		bmp_cdata = _bitmap.bitmap_open(filepath, format)
-		return Bitmap(bmp_cdata)
+    def point_in_bounds(self, x, y):
+        return _bitmap.bitmap_point_in_bounds(self.bmp_ref, [x, y])
 
-	def point_in_bounds(self, x, y):
-		return _bitmap.bitmap_point_in_bounds(self.bmp_ptr, [x, y])
+    def to_string(self):
+        _s = ffi.gc(
+            _bitmap.new("char[]", self.width * self.height), _bitmap.free)
+        if _bitmap.bitmap_to_string(self.bmp_ref, _s):
+            return str(_s)
+        else:
+            return ""
 
-	def to_string(self):
-		_s = ffi.gc(_bitmap.new("char[]", self.width * self.height), _bitmap.free)
-		if _bitmap.bitmap_to_string(self.bmp_cdata, _s):
-			return str(_s)
-		else:
-			return ""
+    @classmethod
+    def from_string(self, _s):
+        _bitmap_ref = _bitmap.bitmap_from_string(_s)
+        return Bitmap(_bitmap_ref)
 
-	@classmethod
-	def from_string(self, _s):
-		_bitmap_ref = _bitmap.bitmap_from_string(_s)
-		return Bitmap(_bitmap_ref)
+    def get_color(self, x, y):
+        return _bitmap.get_color(self.bmp_ref, [x, y])
 
-	def get_color(self, x, y):
-		return _bitmap.get_color(self.bmp_ptr, [x, y])
+    def copy_to_pboard(self):
+        return bool(_bitmap.bitmap_copy_to_pboard(self.bmp_ref))
 
-	def copy_to_pboard(self):
-		return bool(_bitmap.bitmap_copy_to_pboard(self.bmp_ptr))
+    def get_portion(self, x, y, w, h):
+        _bitmap_ref = _bitmap.bitmap_get_portion(self.bmp_ref, [[x, y], w, h])
+        return Bitmap(_bitmap_ref)
 
-	def get_portion(self, x, y, w, h):
-		_bitmap_ref = _bitmap.bitmap_get_portion(self.bmp_ptr, [[x, y], w, h])
-		return Bitmap(_bitmap_ref)
+    def count_of_color(self, color, tolerance=0.0):
+        return _bitmap.bitmap_count_of_color(self.bmp_ref, color, tolerance)
 
-	def count_of_color(self, color, tolerance=0.0):
-		return _bitmap.bitmap_count_of_color(self.bmp_ptr, color, tolerance)
+    def count_of_bitmap(self, color, bmp, tolerance=0.0):
+        return _bitmap.bitmap_count_of_bitmap(self.bmp_ref, bmp.bmp_ref, tolerance)
 
-	def count_of_bitmap(self, color, bmp, tolerance=0.0):
-		return _bitmap.bitmap_count_of_bitmap(self.bmp_ptr, bmp.bmp_cdata, tolerance)
+    def find_color(self, color, tolerance=0.0):
+        point = _bitmap.bitmap_find_color(self.bmp_ref, color, tolerance)
+        return point.x, point.y
 
-	def find_color(self, color, tolerance=0.0):
-		point = _bitmap.bitmap_find_color(self.bmp_ptr, color, tolerance)
-		return point.x, point.y
+    def find_bitmap(self, bmp, tolerance=0.0):
+        point = _bitmap.bitmap_find_bitmap(
+            self.bmp_ref, bmp.bmp_ref, tolerance)
+        return point.x, point.y
 
-	def find_bitmap(self, bmp, tolerance=0.0):
-		point = _bitmap.bitmap_find_bitmap(self.bmp_ptr, bmp.bmp_cdata, tolerance)
-		return point.x, point.y
+    def find_every_color(self, color, tolerance=0.0):
+        n = self.count_of_color(color, tolerance)
+        size = ffi.sizeof("MMPoint")
+        point_ptr = ffi.gc(_bitmap.new("MMPoint[]", n * size), _bitmap.free)
+        point_ptr = _bitmap.bitmap_find_every_color(
+            self.bmp_ref, color, tolerance, point_ptr)
+        _list_result = []
+        for i in range(n):
+            point = point_ptr[i]
+            _list_result.append((point.x, point.y))
 
-	def find_every_color(self, color, tolerance=0.0):
-		n = self.count_of_color(color, tolerance)
-		size = ffi.sizeof("MMPoint")
-		point_ptr = ffi.gc(_bitmap.new("MMPoint[]", n * size), _bitmap.free)
-		point_ptr = _bitmap.bitmap_find_every_color(self.bmp_ptr, color, tolerance, point_ptr)
-		_list_result = []
-		for i in range(n):
-			point = point_ptr[i]
-			_list_result.append((point.x, point.y))
+        return tuple(_list_result)
 
-		return tuple(_list_result)
+    def find_every_bitmap(self, bmp, tolerance=0.0):
+        n = self.count_of_bitmap(bmp, tolerance)
+        size = ffi.sizeof("MMPoint")
+        point_ptr = ffi.gc(_bitmap.new("MMPoint[]", n * size), _bitmap.free)
+        point_ptr = _bitmap.bitmap_find_every_bitmap(
+            self.bmp_ref, bmp.bmp_ref, tolerance, point_ptr)
+        _list_result = []
+        for i in range(n):
+            point = point_ptr[i]
+            _list_result.append((point.x, point.y))
 
-	def find_every_bitmap(self, bmp, tolerance=0.0):
-		n = self.count_of_bitmap(bmp, tolerance)
-		size = ffi.sizeof("MMPoint")
-		point_ptr = ffi.gc(_bitmap.new("MMPoint[]", n * size), _bitmap.free)
-		point_ptr = _bitmap.bitmap_find_every_bitmap(self.bmp_ptr, bmp.bmp_cdata, tolerance, point_ptr)
-		_list_result = []
-		for i in range(n):
-			point = point_ptr[i]
-			_list_result.append((point.x, point.y))
-
-		return tuple(_list_result)
+        return tuple(_list_result)
 
 
 if __name__ == '__main__':
-	a = screen.capture_screen()
-	print(a.height)
-	print(a.save("hhh.png"))
+    a = screen.capture_screen()
+    print(a.height)
+    print(a.save("hhh.png"))
