@@ -1,6 +1,7 @@
 #
 #
-
+RM = D:\MinGW\git\usr\bin\rm.exe
+MV = D:\MinGW\git\usr\bin\mv.exe
 SRCDIR = src
 MODULES = mouse color
 
@@ -8,8 +9,8 @@ MODULES = mouse color
 
 all: 
 	$(MAKE) -C $(SRCDIR)
-	-mv $(SRCDIR)/*.dll .
+	-$(MV) $(SRCDIR)/*.dll .
 
 clean:
-	-rm *.dll *.so *.o
+	-$(RM) *.dll *.so *.o
 	$(MAKE) -C $(SRCDIR) clean

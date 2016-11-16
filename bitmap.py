@@ -4,7 +4,6 @@
 import os
 import sys
 from cffi import FFI
-import screen
 
 
 ffi = FFI()
@@ -70,7 +69,8 @@ ffi.cdef("""
 
 """)
 
-_bitmap = ffi.dlopen("bitmap.dll")
+DIR_NAME = os.path.dirname(os.path.abspath(__file__))
+_bitmap = ffi.dlopen(os.path.join(DIR_NAME, "bitmap.dll"))
 
 
 class Bitmap():
@@ -91,6 +91,7 @@ class Bitmap():
     def save(self, filepath, format=ffi.NULL):
         filepath = filepath.encode(self.enc)
         format = format.encode(self.enc) if format != ffi.NULL else format
+        print(type(self.bmp_ref))
         return _bitmap.bitmap_save(self.bmp_ref, filepath, format)
 
     @classmethod
@@ -172,6 +173,7 @@ class Bitmap():
 
 
 if __name__ == '__main__':
-    a = screen.capture_screen()
-    print(a.height)
-    print(a.save("hhh.png"))
+    pass
+    #a = screen.capture_screen()
+    #print(a.height)
+    #print(a.save("hhh.png"))
